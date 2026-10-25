@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  bio           String?
+  latitude      Float?
+  longitude     Float?
+  socialCredits Int       @default(0)
+  topics        Topic[]
+  books         Book[]
+  sentExchanges Exchange[] @relation("Requester")
+  receivedExchanges Exchange[] @relation("Provider")
+  badges        Badge[]
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  author      String
+  category    String
+  condition   String
+  description String?
+  
+  // ownerId'yi opsiyonel (?) yaparak kullanıcı girişi zorunluluğunu şimdilik aşalım
+  ownerId     String?  
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  
+  status      String   @default("AVAILABLE")
+  latitude    Float?
+  longitude   Float?
+  
+  // Hata veren eksik ilişkiyi buraya ekliyoruz:
+  exchanges   Exchange[] 
+  
+  createdAt   DateTime @default(now())
+}
+model Topic {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+}
+
+model Exchange {
+  id             String   @id @default(cuid())
+  requesterId    String
+  requester      User     @relation("Requester", fields: [requesterId], references: [id])
+  providerId     String
+  provider       User     @relation("Provider", fields: [providerId], references: [id])
+  bookId         String
+  book           Book     @relation(fields: [bookId], references: [id])
+  type           String   // SWAP, GIFT
+  status         String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  meetingPointId String?
+  meetingPoint   MeetingPoint? @relation(fields: [meetingPointId], references: [id])
+  createdAt      DateTime @default(now())
+}
+
+model MeetingPoint {
+  id        String     @id @default(cuid())
+  name      String
+  address   String
+  latitude  Float
+  longitude Float
+  exchanges Exchange[]
+}
+
+model Badge {
+  id    String @id @default(cuid())
+  name  String @unique
+  icon  String
+  users User[]
+}
